@@ -128,6 +128,7 @@
 
   .credentials{ background:var(--paper); padding: 5vw 7vw; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
   .cred-grid{ max-width:1100px; margin:0 auto; display:grid; grid-template-columns: repeat(3, 1fr); gap:0; }
+  .cred-intro{ max-width:720px; margin:0 auto 3vw; font-family:'Fraunces', serif; font-style:italic; font-size:1.15rem; line-height:1.55; color:var(--pine); text-align:center; }
   .cred-card{ padding: 0 32px; border-left:1px solid var(--line); }
   .cred-card:first-child{ border-left:none; padding-left:0; }
   .cred-card .num{ font-family:'Fraunces', serif; font-style:italic; color:var(--gold); font-size:0.95rem; display:block; margin-bottom:10px; }
@@ -261,6 +262,29 @@
     font-weight:600;
     letter-spacing:0.02em;
     margin-bottom:22px;
+  }
+  .fx-widget{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin: -10px 0 20px;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+  .fx-widget select{
+    font-family:'Work Sans', sans-serif;
+    font-size:0.85rem;
+    color:var(--pine);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:4px 8px;
+    cursor:pointer;
+  }
+  .fx-widget .fx-result{
+    font-style:italic;
+    font-family:'Fraunces', serif;
+    color:var(--pine-2);
   }
   .imovel-link{
     margin-top:auto;
@@ -406,11 +430,14 @@
 </section>
 
 <section class="credentials reveal">
+  <p class="cred-intro">My work brings together market analysis, positioning strategy and negotiation to help owners and investors make more confident property decisions.</p>
   <div class="cred-grid">
     <div class="cred-card">
-      <span class="num display">Education</span>
+      <span class="num display">Professional Background</span>
       <h3>Real Estate Transactions Technician</h3>
       <p>Completed TTI course, approved in the professional licensing process for the category.</p>
+      <p>Studied Economics for 3 years.</p>
+      <p>Studied Business Administration for 3 years.</p>
     </div>
     <div class="cred-card">
       <span class="num display">License</span>
@@ -467,6 +494,14 @@
       <span class="eyebrow">Country Estate · Farm</span>
       <h3>Sítio São José</h3>
       <p class="preco">R$ 890,000</p>
+      <div class="fx-widget" data-brl="890000">
+        <select class="fx-currency">
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <span class="fx-result">≈ …</span>
+      </div>
       <span class="imovel-area">42,000 m² of land · Bom Jardim, RJ</span>
       <ul class="imovel-feats">
         <li>Main house, 4 bedrooms (3 en-suite)</li>
@@ -496,6 +531,14 @@
       <span class="eyebrow">Commercial Building</span>
       <h3>Commercial Building in Nova Friburgo</h3>
       <p class="preco">R$ 2,490,000</p>
+      <div class="fx-widget" data-brl="2490000">
+        <select class="fx-currency">
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <span class="fx-result">≈ …</span>
+      </div>
       <span class="imovel-area">1,364 m² total area · Nova Friburgo, RJ</span>
       <ul class="imovel-feats">
         <li>7 rooms total</li>
@@ -519,6 +562,14 @@
       <span class="eyebrow">Country Estate · Farm</span>
       <h3>Your refuge amid nature and tranquility</h3>
       <p class="preco">R$ 700,000</p>
+      <div class="fx-widget" data-brl="700000">
+        <select class="fx-currency">
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <span class="fx-result">≈ …</span>
+      </div>
       <span class="imovel-area">11,666.12 m² of land · Bom Jardim, RJ</span>
       <ul class="imovel-feats">
         <li>6 rooms total</li>
@@ -573,7 +624,43 @@
     });
   }, {threshold: 0.15});
   reveals.forEach(el => io.observe(el));
+
+  // Currency converter (BRL to USD/GBP/EUR)
+  const FALLBACK_RATES = { USD: 0.18, GBP: 0.14, EUR: 0.16 }; // approx., used if live rate is unavailable
+  let liveRates = null;
+
+  fetch('https://api.frankfurter.app/latest?from=BRL&to=USD,GBP,EUR')
+    .then(r => r.json())
+    .then(data => { if (data && data.rates) liveRates = data.rates; updateAllFx(); })
+    .catch(() => { updateAllFx(); });
+
+  function formatFx(value, currency){
+    const symbols = { USD: '$', GBP: '£', EUR: '€' };
+    return symbols[currency] + value.toLocaleString('en-GB', { maximumFractionDigits: 0 });
+  }
+
+  function updateFxWidget(widget){
+    const brl = parseFloat(widget.dataset.brl);
+    const currency = widget.querySelector('.fx-currency').value;
+    const rates = liveRates || FALLBACK_RATES;
+    const rate = rates[currency];
+    const result = widget.querySelector('.fx-result');
+    if(rate){
+      result.textContent = '≈ ' + formatFx(brl * rate, currency) + (liveRates ? '' : ' (approx.)');
+    }
+  }
+
+  function updateAllFx(){
+    document.querySelectorAll('.fx-widget').forEach(updateFxWidget);
+  }
+
+  document.querySelectorAll('.fx-currency').forEach(select => {
+    select.addEventListener('change', () => updateFxWidget(select.closest('.fx-widget')));
+  });
+
+  updateAllFx();
 </script>
+
 
 </body>
 </html>
